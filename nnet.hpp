@@ -27,8 +27,7 @@ namespace maav {
     public:
       NeuralNet(
           unsigned int num_layers,
-          unsigned int num_neurons_hidden,
-          unsigned int max_epochs
+          unsigned int num_neurons_hidden
           );
       virtual ~NeuralNet();
       virtual bool load(const std::string & file_path);
@@ -43,7 +42,6 @@ namespace maav {
 
       unsigned int num_layers_;
       unsigned int num_neurons_hidden_;
-      unsigned int max_epochs_;
       struct fann * ann_;
   };
 }

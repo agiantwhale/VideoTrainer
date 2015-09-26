@@ -19,11 +19,9 @@
 
 maav::NeuralNet::NeuralNet(
   unsigned int num_layers,
-  unsigned int num_neurons_hidden,
-  unsigned int max_epochs
+  unsigned int num_neurons_hidden
 ) : num_layers_(num_layers),
     num_neurons_hidden_(num_neurons_hidden),
-    max_epochs_(max_epochs),
     ann_(nullptr) {
 };
 
