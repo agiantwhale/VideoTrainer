@@ -26,9 +26,6 @@
 namespace maav {
   void LoadEachFrameFromFile(const std::string & video_path,
                              boost::function<void (const cv::Mat &)> & func);
-  void GetRandomPatchFromImage(const cv::Mat & source,
-                               const cv::Size & size,
-                               cv::Mat & patch);
 }
 
 #endif

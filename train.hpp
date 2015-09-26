@@ -52,6 +52,9 @@ namespace maav {
                           const unsigned int max_horizontal_steps,
                           const unsigned int max_vertical_steps,
                           boost::function<void (const cv::Mat &)> & func);
+  void GetRandomPatchFromImage(const cv::Mat & source,
+                               const cv::Size & size,
+                               cv::Mat & patch);
 
   class FeatureExtractFunction {
     public:

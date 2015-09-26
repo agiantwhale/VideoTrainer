@@ -30,16 +30,3 @@ void maav::LoadEachFrameFromFile(const std::string & video_path,
     func(frame);
   }
 }
-
-void maav::GetRandomPatchFromImage(const cv::Mat & source,
-                                   const cv::Size & size,
-                                   cv::Mat & patch) {
-  srand(time(NULL));
-
-  cv::Rect box;
-  box.width = size.width;
-  box.height = size.height;
-  box.x = rand() % (source.cols-box.width);
-  box.y = rand() % (source.rows-box.height);
-  patch = (source)(box).clone();
-}
