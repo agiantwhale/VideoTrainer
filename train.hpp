@@ -53,16 +53,37 @@ namespace maav {
                           const unsigned int max_vertical_steps,
                           boost::function<void (const cv::Mat &)> & func);
 
+  class FeatureExtractFunction {
+    public:
+      FeatureExtractFunction(
+          ExtactInterface & extract_interface,
+          std::vector<Features> & features_collection
+          ) :
+        extract_interface_(extract_interface),
+        features_collection_(features_collection) {}
+
+      void operator() (const cv::Mat & image) {
+        Features features((features_collection_.size()==0?
+              0:features_collection_.front().size()));
+        extract_interface_.compute(image, features);
+        features_collection_.push_back(features);
+      }
+
+    private:
+      ExtactInterface & extract_interface_;
+      std::vector<Features> & features_collection_;
+  };
+
   class NegativeMiningFunction {
     public:
       NegativeMiningFunction(
-          ExtactInterface & extract_interface_,
-          LearnInterface & learn_interface_,
-          std::vector<Features> & negative_features_collection_
+          ExtactInterface & extract_interface,
+          LearnInterface & learn_interface,
+          std::vector<Features> & negative_features_collection
           ) :
-        extract_interface_(extract_interface_),
-        learn_interface_(learn_interface_),
-        negative_features_collection_(negative_features_collection_) {}
+        extract_interface_(extract_interface),
+        learn_interface_(learn_interface),
+        negative_features_collection_(negative_features_collection) {}
 
       void operator() (const cv::Mat & image) {
         Features features((negative_features_collection_.size()==0?
