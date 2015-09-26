@@ -53,29 +53,29 @@ namespace maav {
                           const unsigned int max_vertical_steps,
                           boost::function<void (const cv::Mat &)> & func);
 
-  // class NegativeMiningFunction {
-  //   public:
-  //     // Do not release the ptrs in destructors, let the caller handle that!!
-  //     NegativeMiningFunction(
-  //         ExtactInterface * extract_interface,
-  //         LearnInterface * learn_interface
-  //         ) :
-  //       extract_interface_(extract_interface),
-  //       learn_interface_(learn_interface) {}
+  class NegativeMiningFunction {
+    public:
+      NegativeMiningFunction(
+          ExtactInterface & extract_interface_,
+          LearnInterface & learn_interface_,
+          std::vector<Features> & negative_features_collection_
+          ) :
+        extract_interface_(extract_interface_),
+        learn_interface_(learn_interface_),
+        negative_features_collection_(negative_features_collection_) {}
 
-  //     void operator() (const cv::Mat & image) {
-  //       Features features((features_collection_.size()==0?0:features_collection_.front().size()));
-  //       extract_interface_->compute(image, features);
-  //       if(learn_interface_->test(features)) features_collection_.push_back(features);
-  //     }
+      void operator() (const cv::Mat & image) {
+        Features features((negative_features_collection_.size()==0?
+              0:negative_features_collection_.front().size()));
+        extract_interface_.compute(image, features);
+        if(learn_interface_.test(features)) negative_features_collection_.push_back(features);
+      }
 
-  //     const std::vector<Features> & features_collection() const { return features_collection_; }
-
-  //   private:
-  //     ExtactInterface * extract_interface_;
-  //     LearnInterface * learn_interface_;
-  //     std::vector<Features> features_collection_;
-  // };
+    private:
+      ExtactInterface & extract_interface_;
+      LearnInterface & learn_interface_;
+      std::vector<Features> & negative_features_collection_;
+  };
 }
 
 #endif
