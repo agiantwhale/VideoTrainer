@@ -3,6 +3,8 @@ project(VideoTrainer)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules)
 
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 find_package(Boost REQUIRED)
 find_package(FANN REQUIRED)
 find_package(OpenCV REQUIRED)

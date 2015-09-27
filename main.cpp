@@ -19,10 +19,10 @@
 #include "video.hpp"
 #include "nnet.hpp"
 #include "hog.hpp"
-#include "cereal/archives/binary.hpp"
 
 #include <iostream>
 #include <fstream>
+#include <cereal/archives/binary.hpp>
 
 namespace maav {
   class FeatureExtractMethod {
