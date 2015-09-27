@@ -42,12 +42,11 @@ bool maav::NeuralNet::save(const std::string & file_path) {
   return true;
 }
 
-void maav::NeuralNet::train(const std::vector< std::vector<maav::Features> > & positives,
-                            const std::vector< maav::Features > & negatives) {
-  unsigned int num_data=negatives.size();
-  for(unsigned int i=0;i<positives.size();i++) num_data+=positives[i].size();
-  const unsigned int num_input=positives.front().size();
-  const unsigned int num_output=positives.size()+1;
+void maav::NeuralNet::train(const std::vector<maav::Features> & features_collection,
+                            const std::vector<unsigned int> & divider) {
+  const unsigned int num_data=features_collection.size();
+  const unsigned int num_input=features_collection.front().size();
+  const unsigned int num_output=divider.back()+1;
 
   if(ann_) fann_destroy(ann_);
   ann_=fann_create_standard(num_layers_, num_input,
@@ -59,33 +58,18 @@ void maav::NeuralNet::train(const std::vector< std::vector<maav::Features> > & p
   struct fann_train_data * data=
     fann_create_train(num_data, num_input, num_output);
 
-  unsigned int input_count=0;
-  for(unsigned int i=0;i<positives.size();i++) {
-    for(unsigned int f=0;f<positives[i].size();f++) {
-      data->input[input_count]=(float*)positives[i][f].data();
-      input_count++;
-    }
-  }
-  for(unsigned int f=0;f<negatives.size();f++) {
-    data->input[input_count]=(float*)negatives[f].data();
-    input_count++;
+  for(unsigned int f=0;f<features_collection.size();f++) {
+    data->input[f]=(float*)features_collection[f].data();
   }
 
-  std::vector<maav::Features> positive_outputs(positives.size(),
-                                               maav::Features(num_output, 0));
-  maav::Features negative_output(num_output, 0);
-
-  unsigned int output_count=0;
-  for(unsigned int i=0;i<positives.size();i++) {
-    positive_outputs[i][i]=1;
-    for(unsigned int f=0;f<positives[i].size();f++) {
-      data->output[output_count]=(float*)positives[i].data();
-      output_count++;
-    }
+  std::vector<maav::Features> outputs(num_output,
+                                      maav::Features(num_output, 0));
+  for(unsigned int d=0;d<divider.back();d++) {
+    outputs[d][d]=1;
   }
-  for(unsigned int f=0;f<negatives.size();f++) {
-    data->output[output_count]=(float*)negative_output.data();
-    output_count++;
+
+  for(unsigned int f=0;f<features_collection.size();f++) {
+    data->output[f]=(float*)outputs[divider[f]].data();
   }
 
   fann_train_on_data(ann_, data, max_epoch_, 1000, 0.f);

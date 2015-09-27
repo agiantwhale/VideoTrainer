@@ -33,8 +33,8 @@ namespace maav {
       virtual ~NeuralNet();
       virtual bool load(const std::string & file_path);
       virtual bool save(const std::string & file_path);
-      virtual void train(const std::vector< std::vector<Features> > & positives,
-                         const std::vector<Features> & negatives);
+      virtual void train(const std::vector<Features> & features_collection,
+                         const std::vector<unsigned int> & divier);
       virtual bool test(const Features & features);
 
     private:

@@ -38,8 +38,8 @@ namespace maav {
       virtual ~LearnInterface() {}
       virtual bool load(const std::string & file_path) = 0;
       virtual bool save(const std::string & file_path) = 0;
-      virtual void train(const std::vector<std::vector<Features>> & positives,
-                         const std::vector<Features> & negatives) = 0;
+      virtual void train(const std::vector<Features> & features_collection,
+                         const std::vector<unsigned int> divider) = 0;
       virtual bool test(const Features & features) = 0;
   };
 
