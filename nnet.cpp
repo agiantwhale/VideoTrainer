@@ -46,7 +46,7 @@ void maav::NeuralNet::train(const std::vector<Features> & features_collection,
                             const std::vector<unsigned int> divider) {
   const unsigned int num_data=features_collection.size();
   const unsigned int num_input=features_collection.front().size();
-  const unsigned int num_output=divider.back()+1;
+  const unsigned int num_output=divider.back()+2;
 
   if(ann_) fann_destroy(ann_);
   ann_=fann_create_standard(num_layers_, num_input,
@@ -58,10 +58,6 @@ void maav::NeuralNet::train(const std::vector<Features> & features_collection,
   struct fann_train_data * data=
     fann_create_train(num_data, num_input, num_output);
 
-  for(unsigned int f=0;f<features_collection.size();f++) {
-    data->input[f]=(float*)features_collection[f].data();
-  }
-
   std::vector<maav::Features> outputs(num_output,
                                       maav::Features(num_output, 0));
   for(unsigned int d=0;d<divider.back();d++) {
@@ -69,7 +65,9 @@ void maav::NeuralNet::train(const std::vector<Features> & features_collection,
   }
 
   for(unsigned int f=0;f<features_collection.size();f++) {
-    data->output[f]=(float*)outputs[divider[f]].data();
+    data->input[f]=(float*)features_collection[f].data();
+    if(f<divider.size()) data->output[f]=(float*)outputs[divider[f]].data();
+    else data->output[f]=(float*)outputs.back().data();
   }
 
   fann_train_on_data(ann_, data, max_epoch_, 1000, 0.f);
@@ -83,7 +81,7 @@ void maav::NeuralNet::train(const std::vector<Features> & features_collection,
   fann_destroy_train(data);
 }
 
-bool maav::NeuralNet::test(const maav::Features & features) {
+bool maav::NeuralNet::test(const maav::Features & features) const {
   if(!ann_) return false;
   float * result=fann_run(ann_, (float*)&(features[0]));
   for(unsigned int i=0;i<fann_get_num_output(ann_);i++) {

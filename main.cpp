@@ -29,7 +29,7 @@ namespace maav {
   class FeatureExtractMethod {
     public:
       FeatureExtractMethod(
-          ExtractInterface & extract_interface,
+          const ExtractInterface & extract_interface,
           std::vector<Features> & features_collection
           ) :
         extract_interface_(extract_interface),
@@ -44,15 +44,15 @@ namespace maav {
       }
 
     private:
-      ExtractInterface & extract_interface_;
+      const ExtractInterface & extract_interface_;
       std::vector<Features> & features_collection_;
   };
 
   class NegativeMiningMethod {
     public:
       NegativeMiningMethod(
-          ExtractInterface & extract_interface,
-          LearnInterface & learn_interface,
+          const ExtractInterface & extract_interface,
+          const LearnInterface & learn_interface,
           std::vector<Features> & negative_features_collection
           ) :
         extract_interface_(extract_interface),
@@ -67,40 +67,104 @@ namespace maav {
       }
 
     private:
-      ExtractInterface & extract_interface_;
-      LearnInterface & learn_interface_;
+      const ExtractInterface & extract_interface_;
+      const LearnInterface & learn_interface_;
       std::vector<Features> & negative_features_collection_;
   };
+
+  class TestWindowMethod {
+    public:
+      TestWindowMethod (
+          const ExtractInterface & extract_interface,
+          const LearnInterface & learn_interface,
+          std::vector<cv::Rect> & locations
+          ) :
+        extract_interface_(extract_interface),
+        learn_interface_(learn_interface),
+        locations_(locations) {}
+
+      void operator() (const cv::Mat & image, const cv::Rect & location) {
+        Features features;
+        extract_interface_.compute(image, features);
+        if(learn_interface_.test(features)) locations_.push_back(location);
+      }
+
+    private:
+      const ExtractInterface & extract_interface_;
+      const LearnInterface & learn_interface_;
+      std::vector<cv::Rect> & locations_;
+  };
+}
+
+void test_it(const maav::ExtractInterface & extract_interface,
+             const maav::LearnInterface & learn_interface,
+             const cv::Size & window_size) {
+  cv::Mat img, draw;
+  cv::VideoCapture video;
+  std::vector<cv::Rect> locations;
+  maav::TestWindowMethod test(extract_interface, learn_interface, locations);
+
+  // Open the camera.
+  video.open(1);
+  if( !video.isOpened() )
+  {
+    std::cerr << "Unable to open the device 0" << std::endl;
+    exit( -1 );
+  }
+
+  char key=0;
+  bool end_of_process = false;
+  while( !end_of_process )
+  {
+    video >> img;
+    if( img.empty() )
+        break;
+
+    draw = img.clone();
+
+    boost::function<void (const cv::Mat &, const cv::Rect &)> f=boost::ref(test);
+    maav::ApplySlidingWindow(draw, window_size, 0, 0, f);
+
+    imshow( "Video", draw );
+    key = (char)cv::waitKey( 10 );
+    if( 27 == key )
+        end_of_process = true;
+  }
 }
 
 int main() {
   const cv::Size window_size=cv::Size(128,72);
 
-  maav::HOGExtractor extractor(window_size);
-  maav::NeuralNet learner(3, 3, 5000000);
-
   std::vector<maav::Features> features_collection;
   std::vector<unsigned int> divider;
 
-  maav::FeatureExtractMethod extract_method(extractor, features_collection);
-  boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
+  maav::HOGExtractor extractor(window_size);
+  maav::NeuralNet learner(3, (features_collection.back().size()+divider.back()+2)/2, 50);
 
-  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
-  for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
-    divider.push_back(0);
-  }
+  // maav::FeatureExtractMethod extract_method(extractor, features_collection);
+  // boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
 
-  std::cout << "Positive extraction is done!" << std::endl;
+  // maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
+  // for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
+  //   divider.push_back(0);
+  // }
 
-  extractor.scale_=false;
-  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
+  // std::cout << "Positive extraction is done!" << std::endl;
 
-  std::cout << "Negative extraction is done!" << std::endl;
+  // extractor.scale_=false;
+  // maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
 
+  // std::cout << "Negative extraction is done!" << std::endl;
+
+  // {
+  //   std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
+  //   cereal::BinaryOutputArchive oarchive(file_dump);
+  //   oarchive(features_collection, divider);
+  // }
   {
-    std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
-    cereal::BinaryOutputArchive oarchive(file_dump);
-    oarchive(features_collection, divider);
+    std::ifstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ifstream::binary);
+    cereal::BinaryInputArchive iarchive(file_dump);
+    iarchive(features_collection, divider);
   }
 
   learner.train(features_collection, divider);

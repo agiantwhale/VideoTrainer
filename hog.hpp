@@ -25,7 +25,7 @@ namespace maav {
     public:
       HOGExtractor(const cv::Size & window_size);
       virtual ~HOGExtractor() {}
-      virtual void compute(const cv::Mat & image, Features & features);
+      virtual void compute(const cv::Mat & image, Features & features) const;
 
       bool scale_;
     private:

@@ -24,7 +24,7 @@ scale_(true) {
 }
 
 void maav::HOGExtractor::compute(const cv::Mat & source,
-                                 maav::Features & features) {
+                                 maav::Features & features) const {
   cv::Mat dest;
   if(scale_) cv::resize(source, dest, hog_.winSize);
   else maav::GetRandomPatchFromImage(source, hog_.winSize, dest);

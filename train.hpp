@@ -30,7 +30,7 @@ namespace maav {
   class ExtractInterface {
     public:
       virtual ~ExtractInterface() {}
-      virtual void compute(const cv::Mat & image, Features & features) = 0;
+      virtual void compute(const cv::Mat & image, Features & features) const = 0;
   };
 
   class LearnInterface {
@@ -40,7 +40,7 @@ namespace maav {
       virtual bool save(const std::string & file_path) = 0;
       virtual void train(const std::vector<Features> & features_collection,
                          const std::vector<unsigned int> divider) = 0;
-      virtual bool test(const Features & features) = 0;
+      virtual bool test(const Features & features) const = 0;
   };
 
   void BuildImagePyramid(const cv::Mat & source,
@@ -51,7 +51,7 @@ namespace maav {
                           const cv::Size & window_size,
                           const unsigned int max_horizontal_steps,
                           const unsigned int max_vertical_steps,
-                          boost::function<void (const cv::Mat &)> & func);
+                          boost::function<void (const cv::Mat &, const cv::Rect &)> & func);
   void GetRandomPatchFromImage(const cv::Mat & source,
                                const cv::Size & size,
                                cv::Mat & patch);
