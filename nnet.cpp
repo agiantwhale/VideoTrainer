@@ -42,8 +42,8 @@ bool maav::NeuralNet::save(const std::string & file_path) {
   return true;
 }
 
-void maav::NeuralNet::train(const std::vector<maav::Features> & features_collection,
-                            const std::vector<unsigned int> & divider) {
+void maav::NeuralNet::train(const std::vector<Features> & features_collection,
+                            const std::vector<unsigned int> divider) {
   const unsigned int num_data=features_collection.size();
   const unsigned int num_input=features_collection.front().size();
   const unsigned int num_output=divider.back()+1;

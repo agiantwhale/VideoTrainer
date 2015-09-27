@@ -34,7 +34,7 @@ namespace maav {
       virtual bool load(const std::string & file_path);
       virtual bool save(const std::string & file_path);
       virtual void train(const std::vector<Features> & features_collection,
-                         const std::vector<unsigned int> & divier);
+                         const std::vector<unsigned int> divider);
       virtual bool test(const Features & features);
 
     private:

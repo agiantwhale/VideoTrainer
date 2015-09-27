@@ -27,6 +27,7 @@ namespace maav {
       virtual ~HOGExtractor() {}
       virtual void compute(const cv::Mat & image, Features & features);
 
+      bool scale_;
     private:
       cv::HOGDescriptor hog_;
   };

@@ -55,51 +55,6 @@ namespace maav {
   void GetRandomPatchFromImage(const cv::Mat & source,
                                const cv::Size & size,
                                cv::Mat & patch);
-
-  class FeatureExtractMethod {
-    public:
-      FeatureExtractMethod(
-          ExtractInterface & extract_interface,
-          std::vector<Features> & features_collection
-          ) :
-        extract_interface_(extract_interface),
-        features_collection_(features_collection) {}
-
-      void operator() (const cv::Mat & image) {
-        Features features((features_collection_.size()==0?
-              0:features_collection_.front().size()));
-        extract_interface_.compute(image, features);
-        features_collection_.push_back(features);
-      }
-
-    private:
-      ExtractInterface & extract_interface_;
-      std::vector<Features> & features_collection_;
-  };
-
-  class NegativeMiningMethod {
-    public:
-      NegativeMiningMethod(
-          ExtractInterface & extract_interface,
-          LearnInterface & learn_interface,
-          std::vector<Features> & negative_features_collection
-          ) :
-        extract_interface_(extract_interface),
-        learn_interface_(learn_interface),
-        negative_features_collection_(negative_features_collection) {}
-
-      void operator() (const cv::Mat & image) {
-        Features features((negative_features_collection_.size()==0?
-              0:negative_features_collection_.front().size()));
-        extract_interface_.compute(image, features);
-        if(learn_interface_.test(features)) negative_features_collection_.push_back(features);
-      }
-
-    private:
-      ExtractInterface & extract_interface_;
-      LearnInterface & learn_interface_;
-      std::vector<Features> & negative_features_collection_;
-  };
 }
 
 #endif
