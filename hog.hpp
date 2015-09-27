@@ -24,6 +24,7 @@ namespace maav {
   class HOGExtractor : public ExtractInterface {
     public:
       HOGExtractor(const cv::Size & window_size);
+      virtual ~HOGExtractor() {}
       virtual void compute(const cv::Mat & image, Features & features);
 
     private:

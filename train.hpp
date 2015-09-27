@@ -27,9 +27,9 @@ namespace maav {
   typedef std::vector<float> Features;
   typedef std::vector<cv::Mat> Images;
 
-  class ExtactInterface {
+  class ExtractInterface {
     public:
-      virtual ~ExtactInterface() {}
+      virtual ~ExtractInterface() {}
       virtual void compute(const cv::Mat & image, Features & features) = 0;
   };
 
@@ -56,10 +56,10 @@ namespace maav {
                                const cv::Size & size,
                                cv::Mat & patch);
 
-  class FeatureExtractFunction {
+  class FeatureExtractMethod {
     public:
-      FeatureExtractFunction(
-          ExtactInterface & extract_interface,
+      FeatureExtractMethod(
+          ExtractInterface & extract_interface,
           std::vector<Features> & features_collection
           ) :
         extract_interface_(extract_interface),
@@ -73,14 +73,14 @@ namespace maav {
       }
 
     private:
-      ExtactInterface & extract_interface_;
+      ExtractInterface & extract_interface_;
       std::vector<Features> & features_collection_;
   };
 
-  class NegativeMiningFunction {
+  class NegativeMiningMethod {
     public:
-      NegativeMiningFunction(
-          ExtactInterface & extract_interface,
+      NegativeMiningMethod(
+          ExtractInterface & extract_interface,
           LearnInterface & learn_interface,
           std::vector<Features> & negative_features_collection
           ) :
@@ -96,7 +96,7 @@ namespace maav {
       }
 
     private:
-      ExtactInterface & extract_interface_;
+      ExtractInterface & extract_interface_;
       LearnInterface & learn_interface_;
       std::vector<Features> & negative_features_collection_;
   };
