@@ -19,9 +19,11 @@
 
 maav::NeuralNet::NeuralNet(
   unsigned int num_layers,
-  unsigned int num_neurons_hidden
+  unsigned int num_neurons_hidden,
+  unsigned int max_epoch
 ) : num_layers_(num_layers),
     num_neurons_hidden_(num_neurons_hidden),
+    max_epoch_(max_epoch),
     ann_(nullptr) {
 };
 
@@ -42,6 +44,8 @@ bool maav::NeuralNet::save(const std::string & file_path) {
 
 void maav::NeuralNet::train(const std::vector< std::vector<maav::Features> > & positives,
                             const std::vector< maav::Features > & negatives) {
+  unsigned int num_data=negatives.size();
+  for(unsigned int i=0;i<positives.size();i++) num_data+=positives[i].size();
   const unsigned int num_input=positives.front().size();
   const unsigned int num_output=positives.size()+1;
 
@@ -52,28 +56,47 @@ void maav::NeuralNet::train(const std::vector< std::vector<maav::Features> > & p
   fann_set_activation_function_hidden(ann_, FANN_SIGMOID_SYMMETRIC);
   fann_set_activation_function_output(ann_, FANN_SIGMOID_SYMMETRIC);
 
-  // Train the positives first.
-  for(unsigned int positives_num=0;
-      positives_num<positives.size();
-      positives_num++) {
-    std::vector<float> output(num_output, 0);
-    output[positives_num]=1;
+  struct fann_train_data * data=
+    fann_create_train(num_data, num_input, num_output);
 
-    const std::vector<maav::Features> & positive_features=positives[positives_num];
-    for(auto iter=positive_features.begin();
-        iter!=positive_features.end();
-        iter++) {
-      train_single_iteration((*iter), output);
+  unsigned int input_count=0;
+  for(unsigned int i=0;i<positives.size();i++) {
+    for(unsigned int f=0;f<positives[i].size();f++) {
+      data->input[input_count]=(float*)positives[i][f].data();
+      input_count++;
     }
   }
-
-  // Train negatives.
-  std::vector<float> output(num_output, 0);
-  for(auto iter=negatives.begin();
-      iter!=negatives.end();
-      iter++) {
-    train_single_iteration((*iter), output);
+  for(unsigned int f=0;f<negatives.size();f++) {
+    data->input[input_count]=(float*)negatives[f].data();
+    input_count++;
   }
+
+  std::vector<maav::Features> positive_outputs(positives.size(),
+                                               maav::Features(num_output, 0));
+  maav::Features negative_output(num_output, 0);
+
+  unsigned int output_count=0;
+  for(unsigned int i=0;i<positives.size();i++) {
+    positive_outputs[i][i]=1;
+    for(unsigned int f=0;f<positives[i].size();f++) {
+      data->output[output_count]=(float*)positives[i].data();
+      output_count++;
+    }
+  }
+  for(unsigned int f=0;f<negatives.size();f++) {
+    data->output[output_count]=(float*)negative_output.data();
+    output_count++;
+  }
+
+  fann_train_on_data(ann_, data, max_epoch_, 1000, 0.f);
+
+  for(unsigned int i=0;i<data->num_data;i++) {
+    data->input[i]=nullptr;
+  }
+  for(unsigned int i=0;i<data->num_data;i++) {
+    data->output[i]=nullptr;
+  }
+  fann_destroy_train(data);
 }
 
 bool maav::NeuralNet::test(const maav::Features & features) {
@@ -83,9 +106,4 @@ bool maav::NeuralNet::test(const maav::Features & features) {
     if(result[i]>0) return true;
   }
   return false;
-}
-
-void maav::NeuralNet::train_single_iteration(const Features & features,
-                                             const Features & output) {
-  fann_train(ann_, (float*)&(features[0]), (float*)&(output[0]));
 }
