@@ -122,8 +122,20 @@ void test_it(const maav::ExtractInterface & extract_interface,
 
     draw = img.clone();
 
+    locations.clear();
+
     boost::function<void (const cv::Mat &, const cv::Rect &)> f=boost::ref(test);
     maav::ApplySlidingWindow(draw, window_size, 0, 0, f);
+
+    if( !locations.empty() )
+    {
+      std::vector<cv::Rect>::const_iterator loc = locations.begin();
+      std::vector<cv::Rect>::const_iterator end = locations.end();
+      for( ; loc != end ; ++loc )
+      {
+        cv::rectangle(draw, *loc, cv::Scalar( 255, 0, 255 ), 2);
+      }
+    }
 
     imshow( "Video", draw );
     key = (char)cv::waitKey( 10 );
@@ -133,40 +145,43 @@ void test_it(const maav::ExtractInterface & extract_interface,
 }
 
 int main() {
-  const cv::Size window_size=cv::Size(128,72);
+  const cv::Size window_size=cv::Size(72,128);
 
   std::vector<maav::Features> features_collection;
   std::vector<unsigned int> divider;
 
   maav::HOGExtractor extractor(window_size);
-  maav::NeuralNet learner(3, (features_collection.back().size()+divider.back()+2)/2, 50);
 
-  // maav::FeatureExtractMethod extract_method(extractor, features_collection);
-  // boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
+  maav::FeatureExtractMethod extract_method(extractor, features_collection);
+  boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
 
-  // maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
-  // for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
-  //   divider.push_back(0);
-  // }
-
-  // std::cout << "Positive extraction is done!" << std::endl;
-
-  // extractor.scale_=false;
-  // maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
-
-  // std::cout << "Negative extraction is done!" << std::endl;
-
-  // {
-  //   std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
-  //   cereal::BinaryOutputArchive oarchive(file_dump);
-  //   oarchive(features_collection, divider);
-  // }
-  {
-    std::ifstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ifstream::binary);
-    cereal::BinaryInputArchive iarchive(file_dump);
-    iarchive(features_collection, divider);
+  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
+  for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
+    divider.push_back(0);
   }
+
+  std::cout << "Positive extraction is done!" << std::endl;
+
+  extractor.scale_=false;
+  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
+
+  std::cout << "Negative extraction is done!" << std::endl;
+
+  {
+    std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
+    cereal::BinaryOutputArchive oarchive(file_dump);
+    oarchive(features_collection, divider);
+  }
+  // {
+  //   std::ifstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ifstream::binary);
+  //   cereal::BinaryInputArchive iarchive(file_dump);
+  //   iarchive(features_collection, divider);
+  // }
+
+  maav::NeuralNet learner(3, (features_collection.back().size()+divider.back()+2)/2, 50);
 
   learner.train(features_collection, divider);
   learner.save("/Users/iljae/Development/MHackers/data/trained");
+  // learner.load("/Users/iljae/Development/MHackers/data/trained");
+  // test_it(extractor, learner, window_size);
 }

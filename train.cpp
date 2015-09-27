@@ -37,7 +37,8 @@ void maav::ApplySlidingWindow(const cv::Mat & source,
                               const cv::Size & window_size,
                               const unsigned int max_horizontal_steps,
                               const unsigned int max_vertical_steps,
-                              boost::function<void (const cv::Mat &)> & func) {
+                              boost::function<void (const cv::Mat &,
+                                                    const cv::Rect &)> & func) {
   const unsigned int horizontal_padding=
     max_horizontal_steps!=0?
     std::max(
@@ -54,12 +55,12 @@ void maav::ApplySlidingWindow(const cv::Mat & source,
   box.height=window_size.height;
   cv::Mat sliding_window;
   int x=0,y=0;
-  while(y<source.rows) {
-    while(x<source.cols) {
+  while(y<(source.rows-window_size.height)) {
+    while(x<(source.cols-window_size.width)) {
       box.x=x;
       box.y=y;
       sliding_window=(source)(box);
-      func(sliding_window);
+      func(sliding_window, box);
       x+=(horizontal_padding+window_size.width);
     }
 
