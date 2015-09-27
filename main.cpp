@@ -22,6 +22,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/binary.hpp>
 
@@ -96,16 +99,17 @@ namespace maav {
   };
 }
 
-void test_it(const maav::ExtractInterface & extract_interface,
-             const maav::LearnInterface & learn_interface,
-             const cv::Size & window_size) {
+void TestResult(const maav::ExtractInterface & extract_interface,
+                const maav::LearnInterface & learn_interface,
+                const cv::Size & window_size,
+                int video_source) {
   cv::Mat img, draw;
   cv::VideoCapture video;
   std::vector<cv::Rect> locations;
   maav::TestWindowMethod test(extract_interface, learn_interface, locations);
 
   // Open the camera.
-  video.open(1);
+  video.open(video_source);
   if( !video.isOpened() )
   {
     std::cerr << "Unable to open the device 0" << std::endl;
@@ -144,45 +148,103 @@ void test_it(const maav::ExtractInterface & extract_interface,
   }
 }
 
-int main() {
-  const cv::Size window_size=cv::Size(72,128);
+int main(int argc, char** argv) {
+  bool extract, train;
+  int width, height,
+      max_horizontal_steps,
+      max_vertical_steps,
+      video_source;
+  std::string output_file;
+  std::string model_file;
+  std::string positive_source_directory;
+  std::string negative_source_directory;
+
+  try {
+    namespace po=boost::program_options;
+    po::options_description desc("Options");
+    desc.add_options()
+    ("help,h", "Print help messages")
+    ("extract,e", po::value<bool>(&extract)->default_value(true), "Specify whether to extract features")
+    ("train,t", po::value<bool>(&train)->default_value(false), "Specify whether to train")
+    ("camera,c", po::value<int>(&video_source)->default_value(0), "Specify camera to retrieve test feed")
+    ("width,w", po::value<int>(&width)->required(), "Specify train window width")
+    ("height,h", po::value<int>(&height)->required(), "Specify train window height")
+    ("max_horizontal_steps,mh", po::value<int>(&max_horizontal_steps)->default_value(0), "Specify max horizontal steps the window can take")
+    ("max_vertical_steps,mh", po::value<int>(&max_vertical_steps)->default_value(0), "Specify max vertical steps the window can take")
+    ("positive,p", po::value<std::string>(&positive_source_directory)->default_value(boost::filesystem::current_path().string<std::string>()+"/positive"), "Specify positive video files directory")
+    ("negative,n", po::value<std::string>(&negative_source_directory)->default_value(boost::filesystem::current_path().string<std::string>()+"/negative"), "Specify negative video files direcotry")
+    ("output,o", po::value<std::string>(&output_file)->default_value(boost::filesystem::current_path().string<std::string>()+"/features.dump"), "Specify an features file for save/load")
+    ("model,m", po::value<std::string>(&model_file)->default_value(boost::filesystem::current_path().string<std::string>()+"/result.model"), "Specify an model file for save/load");
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc,argv).options(desc).run(), vm);
+
+    if (vm.count("help")) {
+      std::cout << "Usage: " << argv[0] << " [options]" << std::endl;
+      std::cout << desc;
+      return 0;
+    }
+
+    po::notify(vm);
+  } catch(std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
+  } catch(...) {
+    std::cerr << "Exception of unknown type!" << std::endl;
+    return 1;
+  }
+
+  const cv::Size window_size=cv::Size(width, height);
 
   std::vector<maav::Features> features_collection;
   std::vector<unsigned int> divider;
 
-  //maav::HOGExtractor extractor(window_size);
+  maav::HOGExtractor extractor(window_size);
 
-  //maav::FeatureExtractMethod extract_method(extractor, features_collection);
-  //boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
+  if(extract) {
+    maav::FeatureExtractMethod extract_method(extractor, features_collection);
+    boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
 
-  //maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
-  //for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
-  //  divider.push_back(0);
-  //}
+    boost::filesystem::path positive_dir(positive_source_directory);
+    if(boost::filesystem::is_directory(positive_dir)) {
+      boost::filesystem::directory_iterator dir_iter(positive_dir), eod;
 
-  //std::cout << "Positive extraction is done!" << std::endl;
+      unsigned int counter=0;
+      BOOST_FOREACH(boost::filesystem::path const &file_path, std::make_pair(dir_iter, eod)) {
+        maav::LoadEachFrameFromFile(file_path.string<std::string>(), f);
+        for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
+          divider.push_back(counter);
+        }
+        counter++;
+      }
+    }
 
-  //extractor.scale_=false;
-  //maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
+    boost::filesystem::path negative_dir(positive_source_directory);
+    if(boost::filesystem::is_directory(negative_dir)) {
+      boost::filesystem::directory_iterator dir_iter(negative_dir), eod;
 
-  //std::cout << "Negative extraction is done!" << std::endl;
+      BOOST_FOREACH(boost::filesystem::path const &file_path, std::make_pair(dir_iter, eod)) {
+        maav::LoadEachFrameFromFile(file_path.string<std::string>(), f);
+      }
+    }
 
-  //{
-  //  std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
-  //  cereal::BinaryOutputArchive oarchive(file_dump);
-  //  oarchive(features_collection, divider);
-  //}
-
-  {
-    std::ifstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ifstream::binary);
+    std::ofstream file_dump(output_file, std::ofstream::binary);
+    cereal::BinaryOutputArchive oarchive(file_dump);
+    oarchive(features_collection, divider);
+  } else {
+    std::ifstream file_dump(output_file, std::ifstream::binary);
     cereal::BinaryInputArchive iarchive(file_dump);
     iarchive(features_collection, divider);
   }
 
-  maav::NeuralNet learner(3, (features_collection.back().size()+divider.back()+2)/2, 50);
+  maav::NeuralNet learner(3, (features_collection.back().size()+divider.back()+2)/2, 5000);
 
-  learner.train(features_collection, divider);
-  learner.save("/Users/iljae/Development/MHackers/data/trained");
-  // learner.load("/Users/iljae/Development/MHackers/data/trained");
-  // test_it(extractor, learner, window_size);
+  if(train) {
+    learner.train(features_collection, divider);
+    learner.save(model_file);
+  } else {
+    learner.load(model_file);
+  }
+
+  TestResult(extractor, learner, window_size, video_source);
 }

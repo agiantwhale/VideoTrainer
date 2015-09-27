@@ -70,7 +70,7 @@ void maav::NeuralNet::train(const std::vector<Features> & features_collection,
     else data->output[f]=(float*)outputs.back().data();
   }
 
-  fann_train_on_data(ann_, data, max_epoch_, 1, 0.f);
+  fann_train_on_data(ann_, data, max_epoch_, 100, 0.f);
 
   for(unsigned int i=0;i<data->num_data;i++) {
     data->input[i]=nullptr;
