@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cereal/types/vector.hpp>
 #include <cereal/archives/binary.hpp>
 
 namespace maav {
@@ -91,14 +92,14 @@ int main() {
 
   std::cout << "Positive extraction is done!" << std::endl;
 
+  extractor.scale_=false;
+  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
+
   {
     std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
     cereal::BinaryOutputArchive oarchive(file_dump);
     oarchive(features_collection, divider);
   }
-
-  extractor.scale_=false;
-  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
 
   learner.train(features_collection, divider);
   learner.save("/Users/iljae/Development/MHackers/data/trained");
