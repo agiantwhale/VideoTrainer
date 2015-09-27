@@ -19,8 +19,10 @@
 #include "video.hpp"
 #include "nnet.hpp"
 #include "hog.hpp"
+#include "cereal/archives/binary.hpp"
 
 #include <iostream>
+#include <fstream>
 
 namespace maav {
   class FeatureExtractMethod {
@@ -33,6 +35,7 @@ namespace maav {
         features_collection_(features_collection) {}
 
       void operator() (const cv::Mat & image) const {
+        std::cout << "Extracted features " << features_collection_.size() << "..." << std::endl;
         Features features((features_collection_.size()==0?
               0:features_collection_.front().size()));
         extract_interface_.compute(image, features);
@@ -81,14 +84,22 @@ int main() {
   maav::FeatureExtractMethod extract_method(extractor, features_collection);
   boost::function<void (const cv::Mat &)> f=boost::ref(extract_method);
 
-  maav::LoadEachFrameFromFile("pos1.mov", f);
+  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/positive.MOV", f);
   for(unsigned int i=0;i<(features_collection.size()-divider.size());i++) {
     divider.push_back(0);
   }
 
+  std::cout << "Positive extraction is done!" << std::endl;
+
+  {
+    std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
+    cereal::BinaryOutputArchive oarchive(file_dump);
+    oarchive(features_collection, divider);
+  }
+
   extractor.scale_=false;
-  maav::LoadEachFrameFromFile("neg.mov", f);
+  maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
 
   learner.train(features_collection, divider);
-  learner.save("trained.dat");
+  learner.save("/Users/iljae/Development/MHackers/data/trained");
 }
