@@ -95,6 +95,8 @@ int main() {
   extractor.scale_=false;
   maav::LoadEachFrameFromFile("/Users/iljae/Development/MHackers/data/negative.MOV", f);
 
+  std::cout << "Negative extraction is done!" << std::endl;
+
   {
     std::ofstream file_dump("/Users/iljae/Development/MHackers/data/features.dump", std::ofstream::binary);
     cereal::BinaryOutputArchive oarchive(file_dump);
